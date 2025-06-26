@@ -14,6 +14,7 @@ namespace VillageRaisingJourney.GameManager
         public WorldGenerator worldGenerator;
         public VillageManager villageManager;
         public UIManager uiManager;
+        public VillageRaisingJourney.Events.EventManager eventManagerRef; // EventManagerへの参照
 
         private int currentTurn = 0;
         public int CurrentTurn => currentTurn;
@@ -36,6 +37,7 @@ namespace VillageRaisingJourney.GameManager
             if (worldGenerator == null) Debug.LogError("WorldGenerator is not assigned in GameManager.");
             if (villageManager == null) Debug.LogError("VillageManager is not assigned in GameManager.");
             if (uiManager == null) Debug.LogError("UIManager is not assigned in GameManager.");
+            if (eventManagerRef == null) Debug.LogError("EventManager is not assigned in GameManager.");
         }
 
         void Start()
@@ -142,10 +144,25 @@ namespace VillageRaisingJourney.GameManager
             if (worldGenerator.IsWithinBounds(targetPos))
             {
                 Debug.Log($"Attempting to move village from {currentPos} to {targetPos}");
-                villageManager.MoveVillage(targetPos);
-                villageHasMovedThisTurn = true; // 移動フラグを立てる
-                Debug.Log("Village has moved this turn. (Move now disallowed until next turn)");
-                // UI更新はVillageManager.MoveVillage内で行われる想定
+                villageManager.MoveVillage(targetPos); // これによりタイルからの資源収集とUI内の座標更新が行われる
+                villageHasMovedThisTurn = true;
+                Debug.Log("Village has moved this turn.");
+
+                // 移動後にランダムイベントを発生させる
+                if (eventManagerRef != null && villageManager != null && villageManager.currentStats != null)
+                {
+                    string eventMessage = eventManagerRef.TriggerRandomEvent(villageManager.currentStats);
+                    if (uiManager != null)
+                    {
+                        uiManager.LogEventMessage(eventMessage);
+                        // イベントによって資源が変動したので、ステータスUIも更新
+                        uiManager.UpdateStatusUI(villageManager.currentStats, currentTurn);
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("EventManager, VillageManager, or VillageStats is null. Cannot trigger event or log.");
+                }
             }
             else
             {

@@ -15,7 +15,13 @@ namespace VillageRaisingJourney.UI
         public Text goldText;
         public Text turnText; // 現在のターン数を表示
         public Text villagePositionText; // 村の現在座標を表示 (デバッグ用)
+        public Text residentCountsText; // 職業別住民数を表示
 
+        [Header("Event Log")]
+        public Text eventLogText;
+        public ScrollRect eventLogScrollRect;
+        private List<string> eventLogMessages = new List<string>();
+        private const int MaxLogMessages = 10; // ログの最大表示件数
 
         [Header("Control Panel")]
         public Button nextTurnButton;
@@ -60,6 +66,35 @@ namespace VillageRaisingJourney.UI
             if (villagePositionText != null && GameManager.GameManager.Instance != null && GameManager.GameManager.Instance.villageManager != null)
             {
                 villagePositionText.text = "Position: " + GameManager.GameManager.Instance.villageManager.CurrentPosition.ToString();
+            }
+
+            // 住民構成の表示
+            if (residentCountsText != null && GameManager.GameManager.Instance != null && GameManager.GameManager.Instance.villageManager != null)
+            {
+                residentCountsText.text = GameManager.GameManager.Instance.villageManager.GetResidentCountsByOccupationString();
+            }
+        }
+
+        public void LogEventMessage(string message)
+        {
+            if (eventLogText == null) return;
+
+            string timestamp = System.DateTime.Now.ToString("HH:mm:ss");
+            string fullMessage = $"[{timestamp}] {message}";
+
+            eventLogMessages.Add(fullMessage);
+            if (eventLogMessages.Count > MaxLogMessages)
+            {
+                eventLogMessages.RemoveAt(0);
+            }
+
+            eventLogText.text = string.Join("\n", eventLogMessages);
+
+            // スクロールビューを一番下に移動 (Canvas.ForceUpdateCanvasesを挟むと確実性が増す場合がある)
+            if (eventLogScrollRect != null)
+            {
+                Canvas.ForceUpdateCanvases(); // これがないと、テキスト更新直後にスクロール位置を計算すると古い高さで計算されることがある
+                eventLogScrollRect.verticalNormalizedPosition = 0f;
             }
         }
 

@@ -31,11 +31,52 @@ namespace VillageRaisingJourney.Village
             InitializeVillage();
         }
 
+        // 初期住民のランダムな名前の候補
+        private List<string> firstNames = new List<string> { "Alden", "Brynn", "Cedric", "Daria", "Errol", "Fiona", "Garrett", "Helena" };
+        private List<string> lastNames = new List<string> { "Stone", "River", "Moon", "Iron", "Swift", "Bright", "Shadow", "Flame" };
+
+
         void InitializeVillage()
         {
-            currentStats = new VillageStats(initialPopulation, initialFood, initialWood, initialGold);
-            Debug.Log("Village initialized with stats.");
+            currentStats = new VillageStats(0, initialFood, initialWood, initialGold); // 人口は住民リストから設定
+            GenerateInitialResidents();
+            currentStats.Population = currentStats.Residents.Count; // 住民の数に基づいて人口を更新
+            Debug.Log($"Village initialized. Population: {currentStats.Population}, Food: {currentStats.Food}, Wood: {currentStats.Wood}, Gold: {currentStats.Gold}");
+            foreach(var resident in currentStats.Residents)
+            {
+                Debug.Log($"Resident: {resident.Name}, Job: {resident.Job}");
+            }
         }
+
+        void GenerateInitialResidents()
+        {
+            if (currentStats == null) currentStats = new VillageStats(0,0,0,0); // 安全策
+
+            // 各職業1名ずつ生成 (例)
+            AddResidentWithRandomName(Occupation.Farmer);
+            AddResidentWithRandomName(Occupation.Craftsman);
+            AddResidentWithRandomName(Occupation.Mercenary);
+            AddResidentWithRandomName(Occupation.Merchant);
+
+            // 追加で何名かランダムな職業で生成 (例: さらに2名)
+            for(int i=0; i<2; i++)
+            {
+                Occupation randomJob = (Occupation)Random.Range(0, System.Enum.GetValues(typeof(Occupation)).Length);
+                AddResidentWithRandomName(randomJob);
+            }
+        }
+
+        void AddResidentWithRandomName(Occupation job)
+        {
+            string name = firstNames[Random.Range(0, firstNames.Count)] + " " + lastNames[Random.Range(0, lastNames.Count)];
+            // 名前が重複しないようにする簡単なチェック (より堅牢なシステムではID管理など)
+            while(currentStats.Residents.Exists(r => r.Name == name))
+            {
+                name = firstNames[Random.Range(0, firstNames.Count)] + " " + lastNames[Random.Range(0, lastNames.Count)] + " II"; // 仮対応
+            }
+            currentStats.Residents.Add(new Resident(name, job));
+        }
+
 
         public void PlaceVillage(Vector2Int gridPosition, Transform parentTransform)
         {
@@ -96,24 +137,43 @@ namespace VillageRaisingJourney.Village
 
         public void UpdateVillageStatsPerTurn()
         {
-            // 人口増加（仮のロジック）
-            if (currentStats.Food > currentStats.Population)
+            if (currentStats == null || currentStats.Residents == null) return;
+
+            // 人口変動ロジック
+            bool populationIncreased = false;
+            bool populationDecreased = false;
+
+            // 人口増加条件: 食料が現在の人口より多い
+            if (currentStats.Food > currentStats.Residents.Count && currentStats.Residents.Count > 0)
             {
-                currentStats.Population += 1;
+                Occupation randomNewJob = (Occupation)Random.Range(0, System.Enum.GetValues(typeof(Occupation)).Length);
+                AddResidentWithRandomName(randomNewJob);
+                populationIncreased = true;
+                Debug.Log($"A new resident ({randomNewJob}) has joined the caravan!");
             }
-            else if (currentStats.Food < currentStats.Population / 2 && currentStats.Population > 5) // 食料が人口の半分未満で人口が5以上なら減少
+            // 人口減少条件: 食料が人口の半分未満 かつ 人口が一定数以上 (例: 1人より多い)
+            // かつ食料が0 (餓死の表現)
+            else if (currentStats.Food == 0 && currentStats.Residents.Count > 1 )
             {
-                currentStats.Population -=1;
+                if (currentStats.Residents.Count > 0)
+                {
+                    int residentToRemoveIndex = Random.Range(0, currentStats.Residents.Count);
+                    Resident removedResident = currentStats.Residents[residentToRemoveIndex];
+                    currentStats.Residents.RemoveAt(residentToRemoveIndex);
+                    populationDecreased = true;
+                    Debug.LogWarning($"A resident ({removedResident.Name}, {removedResident.Job}) has left or perished due to lack of food!");
+                }
             }
 
+            // 人口ステータスを住民リストの数に合わせる
+            currentStats.Population = currentStats.Residents.Count;
 
-            // 食料消費
+            // 食料消費 (変動後の人口に基づいて消費)
             currentStats.Food -= currentStats.Population;
-            currentStats.Food = Mathf.Max(0, currentStats.Food); // 0未満にならないようにする
+            currentStats.Food = Mathf.Max(0, currentStats.Food);
 
-            // 木材や金の自然増加/減少は、タイルの影響やイベントで後ほど実装
-            // 木材が消費されるロジックがある場合は currentStats.Wood = Mathf.Max(0, currentStats.Wood - consumedWood); のようにする
-            Debug.Log($"Village stats updated. Pop:{currentStats.Population}, Food:{currentStats.Food}, Wood:{currentStats.Wood}, Gold:{currentStats.Gold}");
+            string popChangeMsg = populationIncreased ? "Population increased." : (populationDecreased ? "Population decreased." : "Population stable.");
+            Debug.Log($"Village stats updated. {popChangeMsg} Pop:{currentStats.Population}, Food:{currentStats.Food}, Wood:{currentStats.Wood}, Gold:{currentStats.Gold}");
         }
 
         public void CollectResourcesFromTile(Tile tile)
@@ -140,6 +200,39 @@ namespace VillageRaisingJourney.Village
                 }
                 Debug.Log($"Collected {yield.amount} of {yield.resourceType} from {tile.tileData.type} tile. New totals: F:{currentStats.Food}, W:{currentStats.Wood}, G:{currentStats.Gold}");
             }
+        }
+
+        public string GetResidentCountsByOccupationString()
+        {
+            if (currentStats == null || currentStats.Residents == null) return "住民情報なし";
+
+            var occupationCounts = new Dictionary<Occupation, int>();
+            foreach (Occupation job in System.Enum.GetValues(typeof(Occupation)))
+            {
+                occupationCounts[job] = 0;
+            }
+
+            foreach (var resident in currentStats.Residents)
+            {
+                occupationCounts[resident.Job]++;
+            }
+
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.Append("住民構成: ");
+            foreach (var pair in occupationCounts)
+            {
+                // 職業名を短縮して表示する例（F:農 C:職 M:傭 T:商）
+                string jobShortName = "";
+                switch(pair.Key) {
+                    case Occupation.Farmer: jobShortName = "農"; break;
+                    case Occupation.Craftsman: jobShortName = "職"; break;
+                    case Occupation.Mercenary: jobShortName = "傭"; break;
+                    case Occupation.Merchant: jobShortName = "商"; break;
+                    default: jobShortName = pair.Key.ToString().Substring(0,1); break;
+                }
+                sb.Append($"{jobShortName}:{pair.Value} ");
+            }
+            return sb.ToString().Trim();
         }
     }
 }
