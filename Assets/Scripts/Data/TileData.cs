@@ -1,7 +1,7 @@
 // TileData.cs
 using UnityEngine;
 
-namespace VillageRaisingJourney.Data // 名前空間を .Data を追加
+namespace VillageRaisingJourney
 {
     public enum TileType
     {
@@ -21,7 +21,7 @@ namespace VillageRaisingJourney.Data // 名前空間を .Data を追加
     [System.Serializable]
     public class ResourceYield
     {
-        public ResourceType resourceType; // これは VillageRaisingJourney.Data.ResourceType を参照するようになる
+        public ResourceType resourceType;
         public int amount;
     }
 }
