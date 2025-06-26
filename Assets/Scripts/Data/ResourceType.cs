@@ -1,5 +1,5 @@
 // ResourceType.cs
-namespace VillageRaisingJourney
+namespace VillageRaisingJourney.Data
 {
     public enum ResourceType
     {

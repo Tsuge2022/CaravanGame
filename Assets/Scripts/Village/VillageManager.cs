@@ -1,6 +1,7 @@
 // VillageManager.cs
 using UnityEngine;
 using VillageRaisingJourney.World; // Tileを参照するため
+using VillageRaisingJourney.Data;
 
 namespace VillageRaisingJourney.Village
 {
@@ -50,7 +51,7 @@ namespace VillageRaisingJourney.Village
                 Debug.LogError("WorldGenerator reference is missing in VillageManager. Using gridPosition as worldPosition.");
                 worldPos = new Vector3(gridPosition.x, gridPosition.y, 0); // フォールバック
             }
-
+            
             if (villagePrefab != null)
             {
                 villageInstance = Instantiate(villagePrefab, worldPos, Quaternion.identity, parentTransform);
