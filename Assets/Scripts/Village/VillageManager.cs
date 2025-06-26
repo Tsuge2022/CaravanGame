@@ -1,7 +1,7 @@
 // VillageManager.cs
 using UnityEngine;
-using VillageRaisingJourney.World; // Tileを参照するため4
-using VillageRaisingJourney.Data; // ResourceTypeやTileDataを参照するため
+using VillageRaisingJourney.World; // Tileを参照するため
+using VillageRaisingJourney.Data;
 
 namespace VillageRaisingJourney.Village
 {
