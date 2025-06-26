@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 namespace VillageRaisingJourney.Data // 名前空間を .Data を追加
