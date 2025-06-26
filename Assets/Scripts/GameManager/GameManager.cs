@@ -60,7 +60,7 @@ namespace VillageRaisingJourney.GameManager
             if (villageManager != null && worldGenerator != null)
             {
                 // VillageManagerのInitializeVillageはStartで呼ばれるのでここでは不要かも
-                // villageManager.InitializeVillage();
+                // villageManager.InitializeVillage(); 
                 Vector2Int startPosition = worldGenerator.GetRandomGridPosition();
                 Transform worldContainer = worldGenerator.GetWorldContainer();
                 villageManager.PlaceVillage(startPosition, worldContainer);
